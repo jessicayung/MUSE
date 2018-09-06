@@ -282,9 +282,24 @@ def read_txt_embeddings(params, source, full_vocab):
                 word, vect = line.rstrip().split(' ', 1)
                 if not full_vocab:
                     word = word.lower()
+                vect2 = vect
                 vect = np.fromstring(vect, sep=' ')
                 if np.linalg.norm(vect) == 0:  # avoid to have null embeddings
-                    vect[0] = 0.01
+                    # J: add try except clause, vect[0] = 0.01 is original
+                    try:
+                        might_be_word = vect2.rstrip().split(' ', 1)[0]
+                        float(might_be_word)
+                    except ValueError:
+                        # encountered two-word phrase
+                        word, word2, vect = line.rstrip().split(' ', 2)
+                        word = word + ' ' + word2
+                        if not full_vocab:
+                            word = word.lower()
+                        vect = np.fromstring(vect, sep = ' ')
+                        if np.linalg.norm(vect) == 0:
+                            vect[0] = 0.01
+                    else:
+                        vect[0] = 0.01
                 if word in word2id:
                     if full_vocab:
                         logger.warning("Word '%s' found twice in %s embedding file"
@@ -432,8 +447,9 @@ def export_embeddings(src_emb, tgt_emb, params):
 
     # text file
     if params.export == "txt":
-        src_path = os.path.join(params.exp_path, 'vectors-%s.txt' % params.src_lang)
-        tgt_path = os.path.join(params.exp_path, 'vectors-%s.txt' % params.tgt_lang)
+        # J: add src, tgt labels to filenames
+        src_path = os.path.join(params.exp_path, 'vectors-src-%s.txt' % params.src_lang)
+        tgt_path = os.path.join(params.exp_path, 'vectors-tgt-%s.txt' % params.tgt_lang)
         # source embeddings
         logger.info('Writing source embeddings to %s ...' % src_path)
         with io.open(src_path, 'w', encoding='utf-8') as f:

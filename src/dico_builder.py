@@ -26,13 +26,16 @@ def get_candidates(emb1, emb2, params):
     # number of source words to consider
     n_src = emb1.size(0)
     if params.dico_max_rank > 0 and not params.dico_method.startswith('invsm_beta_'):
-        n_src = params.dico_max_rank
+        if n_src > params.dico_max_rank:  # J: added line
+            n_src = params.dico_max_rank
 
     # nearest neighbors
     if params.dico_method == 'nn':
 
         # for every source word
         for i in range(0, n_src, bs):
+            if i > emb1.size(0):  # J: added condition (including break)
+                break
 
             # compute target words scores
             scores = emb2.mm(emb1[i:min(n_src, i + bs)].transpose(0, 1)).transpose(0, 1)
